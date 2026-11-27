@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduVerse AR + AI: Matematika & Literasi Digital</title>
+    <!-- Library A-Frame untuk WebVR/3D -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+        /* UI Overlay */
+        #ui-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 10;
+        }
+        .header {
+            background: rgba(15, 23, 42, 0.85);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        .tab-buttons button {
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 6px;
+            font-weight: 600;
+        }
+        .tab-buttons button.active {
+            background: #3b82f6;
+        }
+        .bottom-panels {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .panel {
+            background: rgba(15, 23, 42, 0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            width: 320px;
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .panel h3 {
+            margin-top: 0;
+            font-size: 1rem;
+            color: #60a5fa;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 6px;
+        }
+        /* Kontrol Matematika & Literasi */
+        .control-group {
+            margin: 10px 0;
+            font-size: 0.9rem;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .badge-safe { background: #10b981; color: #064e3b; }
+        .badge-danger { background: #ef4444; color: #fff; }
+        
+        /* AI Chat Panel */
+        #chat-box {
+            height: 120px;
+            overflow-y: auto;
+            background: #1e293b;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+        .chat-msg { margin-bottom: 6px; line-height: 1.4; }
+        .chat-ai { color: #93c5fd; }
+        .chat-user { color: #f8fafc; text-align: right; }
+        .chat-input-group {
+            display: flex;
+            gap: 5px;
+        }
+        .chat-input-group input {
+            flex: 1;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: none;
+            background: #334155;
+            color: white;
+        }
+        .chat-input-group button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Antarmuka Pengguna (UI) -->
+    <div id="ui-container">
+        <div class="header">
+            <h1>🌐 EduXR + AI: Media Pembelajaran Interaktif</h1>
+            <div class="tab-buttons">
+                <button id="btn-math" class="active" onclick="switchMode('math')">📐 Aplikasi Matematika</button>
+                <button id="btn-diglit" onclick="switchMode('diglit')">🔐 Literasi Digital</button>
+            </div>
+        </div>
+
+        <div class="bottom-panels">
+            <!-- Panel Kontrol Materi -->
+            <div class="panel" id="control-panel">
+                <!-- Konten Matematika -->
+                <div id="math-controls">
+                    <h3>Visualisasi Geometri Ruang 3D</h3>
+                    <div class="control-group">
+                        <label>Panjang Sisi Kubus ($s$): <strong id="val-sisi">2</strong> m</label>
+                        <input type="range" id="slider-sisi" min="1" max="4" step="0.5" value="2" oninput="updateCube(this.value)">
+                    </div>
+                    <div class="control-group">
+                        <p>Rumus Volume: $V = s^3$</p>
+                        <p>Hasil Perhitungan: <strong id="val-volume" style="color:#34d399; font-size:1.1rem;">8 m³</strong></p>
+                        <p>Luas Permukaan: <strong id="val-luas" style="color:#fbbf24;">24 m²</strong></p>
+                    </div>
+                </div>
+
+                <!-- Konten Literasi Digital -->
+                <div id="diglit-controls" style="display:none;">
+                    <h3>Simulasi Keamanan Siber & Enkripsi</h3>
+                    <div class="control-group">
+                        <p>Status Jaringan Data 3D:</p>
+                        <span id="net-status" class="badge badge-danger">TIDAK TERENKRIPSI (HTTP)</span>
+                    </div>
+                    <div class="control-group">
+                        <button onclick="toggleEncryption()" style="width:100%; padding:8px; background:#10b981; border:none; border-radius:6px; color:white; font-weight:bold; cursor:pointer;">
+                            🛡️ Aktifkan / Matikan Enkripsi SSL
+                        </button>
+                    </div>
+                    <p style="font-size:0.8rem; color:#cbd5e1;">Amati perubahan aliran paket data 3D saat perlindungan enkripsi diaktifkan.</p>
+                </div>
+            </div>
+
+            <!-- Panel Generative AI Tutor -->
+            <div class="panel">
+                <h3>🤖 AI Tutor Assistant</h3>
+                <div id="chat-box">
+                    <div class="chat-msg chat-ai"><strong>AI Tutor:</strong> Halo! Ubah ukuran kubus 3D di sebelah kiri atau beralih ke modul Literasi Digital. Tanyakan apa saja tentang konsep yang tampil!</div>
+                </div>
+                <div class="chat-input-group">
+                    <input type="text" id="ai-input" placeholder="Tanya rumus / keamanan data..." onkeypress="if(event.key==='Enter') askAI()">
+                    <button onclick="askAI()">Kirim</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lingkungan 3D / WebVR (A-Frame) -->
+    <a-scene background="color: #0f172a">
+        <!-- Pencahayaan -->
+        <a-light type="ambient" color="#ffffff" intensity="0.7"></a-light>
+        <a-light type="directional" position="2 4 3" intensity="0.8"></a-light>
+
+        <!-- Lantai Grid Virtual -->
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="12" height="12" color="#1e293b" wireframe="true"></a-plane>
+
+        <!-- OBJEK 1: Modul Aplikasi Matematika (Kubus Interaktif) -->
+        <a-entity id="scene-math" position="0 1.6 -4">
+            <a-box id="math-cube" position="0 0 0" scale="1.5 1.5 1.5" color="#3b82f6" opacity="0.85"
+                   animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear">
+            </a-box>
+            <a-text id="cube-label" value="Kubus (s = 2m)\nV = 8 m3" position="0 1.5 0" align="center" color="#ffffff" width="4"></a-text>
+        </a-entity>
+
+        <!-- OBJEK 2: Modul Literasi Digital (Visualisasi Paket Data & Firewall) -->
+        <a-entity id="scene-diglit" position="0 1.6 -4" visible="false">
+            <!-- Server Node -->
+            <a-cylinder position="-1.8 0 0" radius="0.5" height="1.4" color="#64748b"></a-cylinder>
+            <a-text value="Pengguna" position="-1.8 1.1 0" align="center" width="3"></a-text>
+
+            <!-- Paket Data Bergerak -->
+            <a-sphere id="data-packet" position="-1 0 0" radius="0.2" color="#ef4444"
+                      animation="property: position; from: -1.2 0 0; to: 1.2 0 0; dir: alternate; loop: true; dur: 2000">
+            </a-sphere>
+
+            <!-- Perisai Firewall / Enkripsi -->
+            <a-torus id="shield-ring" position="0 0 0" radius="0.9" radius-tubular="0.05" color="#ef4444"
+                     animation="property: rotation; to: 0 360 0; loop: true; dur: 6000">
+            </a-torus>
+
+            <!-- Cloud Server -->
+            <a-cylinder position="1.8 0 0" radius="0.5" height="1.4" color="#3b82f6"></a-cylinder>
+            <a-text value="Server Cloud" position="1.8 1.1 0" align="center" width="3"></a-text>
+        </a-entity>
+
+        <!-- Kamera Pengguna -->
+        <a-entity position="0 1.6 0">
+            <a-camera look-controls wasd-controls></a-camera>
+        </a-entity>
+    </a-scene>
+
+    <script>
+        let currentMode = 'math';
+        let isEncrypted = false;
+
+        // Navigasi Modul
+        function switchMode(mode) {
+            currentMode = mode;
+            document.getElementById('btn-math').classList.toggle('active', mode === 'math');
+            document.getElementById('btn-diglit').classList.toggle('active', mode === 'diglit');
+
+            document.getElementById('math-controls').style.display = mode === 'math' ? 'block' : 'none';
+            document.getElementById('diglit-controls').style.display = mode === 'diglit' ? 'block' : 'none';
+
+            document.getElementById('scene-math').setAttribute('visible', mode === 'math');
+            document.getElementById('scene-diglit').setAttribute('visible', mode === 'diglit');
+        }
+
+        // Logika Aplikasi Matematika
+        function updateCube(sisi) {
+            const s = parseFloat(sisi);
+            const volume = Math.pow(s, 3);
+            const luas = 6 * Math.pow(s, 2);
+
+            document.getElementById('val-sisi').innerText = s;
+            document.getElementById('val-volume').innerText = volume + ' m³';
+            document.getElementById('val-luas').innerText = luas + ' m²';
+
+            const visualScale = s * 0.6;
+            const cube = document.getElementById('math-cube');
+            cube.setAttribute('scale', `${visualScale} ${visualScale} ${visualScale}`);
+            document.getElementById('cube-label').setAttribute('value', `Kubus (s = ${s}m)\nV = ${volume} m3`);
+        }
+
+        // Logika Literasi Digital
+        function toggleEncryption() {
+            isEncrypted = !isEncrypted;
+            const statusBadge = document.getElementById('net-status');
+            const packet = document.getElementById('data-packet');
+            const shield = document.getElementById('shield-ring');
+
+            if (isEncrypted) {
+                statusBadge.innerText = 'TERENKRIPSI AMAN (HTTPS / TLS)';
+                statusBadge.className = 'badge badge-safe';
+                packet.setAttribute('color', '#10b981');
+                shield.setAttribute('color', '#10b981');
+            } else {
+                statusBadge.innerText = 'TIDAK TERENKRIPSI (HTTP)';
+                statusBadge.className = 'badge badge-danger';
+                packet.setAttribute('color', '#ef4444');
+                shield.setAttribute('color', '#ef4444');
+            }
+        }
+
+        // Simulasi Respons Generative AI Tutor
+        function askAI() {
+            const input = document.getElementById('ai-input');
+            const chatBox = document.getElementById('chat-box');
+            const question = input.value.trim();
+            if (!question) return;
+
+            chatBox.innerHTML += `<div class="chat-msg chat-user"><strong>Anda:</strong> ${question}</div>`;
+            input.value = '';
+
+            let reply = '';
+            const qLower = question.toLowerCase();
+
+            if (qLower.includes('volume') || qLower.includes('kubus') || qLower.includes('rumus')) {
+                const s = document.getElementById('slider-sisi').value;
+                reply = `Untuk kubus dengan sisi <b>${s} m</b>, volumenya dihitung dengan memangkatkan tiga panjang sisinya ($V = s^3 = ${s}^3 = ${Math.pow(s,3)}\\text{ m}^3$). Visualisasi 3D membantu Anda melihat pertumbuhan ruang secara kubik.`;
+            } else if (qLower.includes('enkripsi') || qLower.includes('https') || qLower.includes('phishing') || qLower.includes('aman')) {
+                reply = `Dalam literasi digital, <b>Enkripsi TLS/HTTPS</b> mengubah data mentah menjadi kode acak saat melewati jaringan (ditandai paket hijau pada simulasi 3D) sehingga peretas tidak bisa membaca kata sandi Anda.`;
+            } else {
+                reply = `Berdasarkan modul <b>${currentMode === 'math' ? 'Aplikasi Matematika' : 'Literasi Digital'}</b> yang aktif: coba ubah parameter pada panel kontrol kiri untuk melihat dampak langsungnya pada objek 3D, lalu tanyakan detail rumusnya!`;
+            }
+
+            setTimeout(() => {
+                chatBox.innerHTML += `<div class="chat-msg chat-ai"><strong>AI Tutor:</strong> ${reply}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 400);
+        }
+    </script>
+</body>
+</html>
